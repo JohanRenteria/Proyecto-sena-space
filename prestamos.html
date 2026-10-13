@@ -382,7 +382,7 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
                                 </a>
 
                                 <a class="dropdown-item"
-                                    href="Login.html">
+                                    href="logout.php">
 
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Desconectar
@@ -611,6 +611,7 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
     <script src="js/sb-admin-2.min.js"></script>
+    <Script src="js/session.js"></script>
 
 
     <!-- FUNCIONALIDAD ORIGINAL -->
@@ -620,6 +621,15 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
 
         let recursos = [];
 
+        function escaparHtml(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[caracter]);
+        }
 
         function api(a, extra = {}) {
 
@@ -633,8 +643,15 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
 
             return fetch('recursos_api.php', {
                 method: 'POST',
+                credentials: 'same-origin',
                 body: f
-            }).then(r => r.json());
+            }).then(async response => {
+                const resultado = await response.json();
+                if (!response.ok && !resultado.message) {
+                    throw new Error('No fue posible completar la solicitud.');
+                }
+                return resultado;
+            });
 
         }
 
@@ -646,12 +663,12 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
                 if (!r.success)
                     return alert(r.message);
 
-                recursos = r.data;
+                recursos = Array.isArray(r.data) ? r.data : [];
 
                 $('recurso').innerHTML =
                     recursos.map(x =>
-                        `<option value="${x.id}">
-                            ${x.nombre} — ${x.tipo}
+                        `<option value="${escaparHtml(x.id)}">
+                            ${escaparHtml(x.nombre)} — ${escaparHtml(x.tipo)}
                         </option>`
                     ).join('');
 
@@ -667,6 +684,9 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
 
                 verificar();
 
+            }).catch(error => {
+                console.error('No se pudieron cargar los recursos:', error);
+                alert('No se pudieron cargar los recursos. Intenta de nuevo.');
             });
 
         }
@@ -722,6 +742,10 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
                 $('enviar').disabled =
                     r.data.disponibles < 1;
 
+            }).catch(error => {
+                console.error('No se pudo verificar la disponibilidad:', error);
+                $('disp').textContent = 'No se pudo verificar la disponibilidad.';
+                $('enviar').disabled = true;
             });
 
         }
@@ -759,6 +783,9 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
 
                 }
 
+            }).catch(error => {
+                console.error('No se pudo crear la solicitud:', error);
+                alert('No se pudo enviar la solicitud. Intenta de nuevo.');
             });
 
         }
@@ -777,20 +804,20 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
                     r.data.map(x => `<tr>
 
                         <td>
-                            <b>${x.recurso_nombre}</b>
+                            <b>${escaparHtml(x.recurso_nombre)}</b>
                             <div class="r-mini">
-                                ${x.tipo}
+                                ${escaparHtml(x.tipo)}
                             </div>
                         </td>
 
                         <td>
-                            ${x.fecha_inicio}
+                            ${escaparHtml(x.fecha_inicio)}
                             →
-                            ${x.fecha_devolucion}
+                            ${escaparHtml(x.fecha_devolucion)}
                         </td>
 
                         <td>
-                            ${x.cantidad}
+                            ${escaparHtml(x.cantidad)}
                         </td>
 
                         <td>
@@ -805,14 +832,14 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
                                     : 'r-pending'
                             }">
 
-                                ${x.estado}
+                                ${escaparHtml(x.estado)}
 
                             </span>
 
                         </td>
 
                         <td>
-                            ${x.observacion || '—'}
+                            ${escaparHtml(x.observacion || '—')}
                         </td>
 
                     </tr>`).join('')
@@ -821,6 +848,8 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
 
                     '<tr><td colspan="5" class="r-empty">No tienes solicitudes.</td></tr>';
 
+            }).catch(error => {
+                console.error('No se pudieron cargar las solicitudes:', error);
             });
 
         }
@@ -853,21 +882,6 @@ body{background:#f8f9fc}.loan-wrap{max-width:1180px;margin:35px auto;padding:0 1
 
         setInterval(mis, 7000);
 
-
-        /* Usuario */
-        let name =
-            localStorage.getItem("userName");
-
-
-        if (name) {
-
-            const userNameTop =
-                document.getElementById("userNameTop");
-
-            if (userNameTop)
-                userNameTop.textContent = name;
-
-        }
 
     </script>
 

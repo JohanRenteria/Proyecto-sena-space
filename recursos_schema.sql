@@ -54,9 +54,15 @@ CREATE TABLE IF NOT EXISTS solicitudes (
     INDEX idx_solicitudes_usuario (usuario_id),
     INDEX idx_solicitudes_recurso (recurso_id),
     INDEX idx_solicitudes_estado (estado),
+    INDEX idx_solicitudes_disponibilidad (recurso_id, estado, fecha_inicio, fecha_devolucion),
+    CONSTRAINT chk_solicitudes_cantidad CHECK (cantidad > 0),
+    CONSTRAINT chk_solicitudes_fechas CHECK (fecha_devolucion >= fecha_inicio),
     CONSTRAINT fk_solicitudes_usuario FOREIGN KEY (usuario_id) REFERENCES admin(cedula) ON UPDATE CASCADE,
     CONSTRAINT fk_solicitudes_recurso FOREIGN KEY (recurso_id) REFERENCES recursos(id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+ALTER TABLE solicitudes
+    ADD INDEX IF NOT EXISTS idx_solicitudes_disponibilidad (recurso_id, estado, fecha_inicio, fecha_devolucion);
 
 CREATE TABLE IF NOT EXISTS reposiciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
