@@ -38,6 +38,7 @@ Se añadieron al sena_space:
 - rol_sistema en admin
 
 También se cargan los recursos de prueba indicados en la solicitud.
+La tabla `password_resets` almacena los tokens temporales del restablecimiento de contraseña.
 
 VERIFICACIÓN DE DISPONIBILIDAD
 ------------------------------
@@ -79,7 +80,12 @@ INSTALACIÓN
 1. Copiar este proyecto a XAMPP/htdocs o al servidor PHP.
 2. Crear/importar la base sena_space usando sena_space.sql.
 3. Revisar conexion.php si usuario/clave de MySQL son diferentes.
-4. Abrir Login.html.
-5. Iniciar sesión.
+4. Configurar las variables de entorno `MAIL_USERNAME` y `MAIL_PASSWORD` para SMTP. Para Gmail, usa una contraseña de aplicación y activa la verificación en dos pasos; el remitente será esa misma cuenta. `MAIL_HOST` es opcional (por defecto `smtp.gmail.com`).
+5. Configurar `APP_BASE_URL` con la URL base del proyecto, por ejemplo `http://localhost/Proyecto-sena-space`, sin barra final. En Windows, define estas variables de entorno y reinicia Apache desde XAMPP.
+6. Si la base de datos ya existe, ejecutar `recursos_schema.sql` para crear `password_resets`. En una instalación nueva, importar `sena_space.sql`.
+7. Abrir Login.html.
+8. Iniciar sesión.
+
+No guardes la contraseña SMTP en archivos del proyecto ni reutilices claves que ya se hayan publicado.
 
 El módulo conserva el lenguaje visual del proyecto LOG-IN (SB Admin 2) y el estilo funcional de los betas originales: navegación lateral, tarjetas KPI, tablas, estados, modales, filtros y verificación.

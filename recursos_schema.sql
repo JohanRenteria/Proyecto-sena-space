@@ -9,6 +9,16 @@ USE sena_space;
 ALTER TABLE admin
     ADD COLUMN IF NOT EXISTS rol_sistema VARCHAR(30) NOT NULL DEFAULT 'Usuario';
 
+CREATE TABLE IF NOT EXISTS password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    correo VARCHAR(254) NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    UNIQUE KEY uq_password_resets_correo (correo),
+    INDEX idx_password_resets_expiry (expires_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
 -- Cuenta demo administrativa ya existente en el proyecto.
 -- Correo: kd@gmail.com / contraseña actual: 0
 UPDATE admin

@@ -1,85 +1,122 @@
 <?php
-require_once 'conexion.php';
+require_once __DIR__ . '/conexion.php';
 
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header('Location: New_password.html');
+function newPasswordAlert(string $message, string $destination = 'Forgot-password.html'): void
+{
+    $safeMessage = json_encode($message, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+    $safeDestination = json_encode($destination, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+    echo "<script>alert($safeMessage); window.location.href=$safeDestination;</script>";
     exit;
 }
 
-$token = trim($_POST['token'] ?? '');
-$email = trim($_POST['email'] ?? '');
-$newPassword = trim($_POST['newPassword'] ?? '');
-$confirmPassword = trim($_POST['confirmPassword'] ?? '');
-
-if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $token === '') {
-    echo "<script>alert('No se encontró un enlace válido para restablecer la contraseña. Vuelve a intentarlo.'); window.location='Forgot-password.html';</script>";
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: Forgot-password.html');
     exit;
 }
 
-// Verificar token en la tabla password_resets
-$check = mysqli_prepare($conexion, "SELECT expires_at FROM password_resets WHERE correo = ? AND token = ? LIMIT 1");
-if (!$check) {
-    die('Error en la preparación de la consulta: ' . mysqli_error($conexion));
-}
-mysqli_stmt_bind_param($check, 'ss', $email, $token);
-if (!mysqli_stmt_execute($check)) {
-    die('Error en la ejecución de la consulta: ' . mysqli_stmt_error($check));
-}
-mysqli_stmt_store_result($check);
-if (mysqli_stmt_num_rows($check) === 0) {
-    mysqli_stmt_close($check);
-    mysqli_close($conexion);
-    echo "<script>alert('Enlace inválido o expirado. Solicita un nuevo restablecimiento.'); window.location='Forgot-password.html';</script>";
-    exit;
-}
-mysqli_stmt_bind_result($check, $expiresAt);
-mysqli_stmt_fetch($check);
-mysqli_stmt_close($check);
+$submittedToken = $_POST['token'] ?? '';
+$submittedEmail = $_POST['email'] ?? '';
+$token = is_string($submittedToken) ? trim($submittedToken) : '';
+$email = is_string($submittedEmail) ? trim($submittedEmail) : '';
+$newPassword = $_POST['newPassword'] ?? '';
+$confirmPassword = $_POST['confirmPassword'] ?? '';
 
-if (strtotime($expiresAt) < time()) {
-    echo "<script>alert('El enlace ha expirado. Solicita un nuevo restablecimiento.'); window.location='Forgot-password.html';</script>";
-    exit;
+if (
+    $email === '' ||
+    !filter_var($email, FILTER_VALIDATE_EMAIL) ||
+    $token === '' ||
+    !is_string($newPassword) ||
+    !is_string($confirmPassword)
+) {
+    newPasswordAlert('El enlace no es válido. Solicita un nuevo restablecimiento.');
 }
+
+$resetPageUrl = 'New_password.html?' . http_build_query([
+    'email' => $email,
+    'token' => $token,
+]);
 
 if ($newPassword === '' || $confirmPassword === '') {
-    echo "<script>alert('Debe ingresar y confirmar la nueva contraseña.'); window.location='New_password.html';</script>";
-    exit;
+    newPasswordAlert('Debe ingresar y confirmar la nueva contraseña.', $resetPageUrl);
 }
 
 if ($newPassword !== $confirmPassword) {
-    echo "<script>alert('Las contraseñas no coinciden.'); window.location='New_password.html';</script>";
-    exit;
+    newPasswordAlert('Las contraseñas no coinciden.', $resetPageUrl);
 }
 
 if (strlen($newPassword) < 6) {
-    echo "<script>alert('La contraseña debe tener al menos 6 caracteres.'); window.location='New_password.html';</script>";
-    exit;
+    newPasswordAlert('La contraseña debe tener al menos 6 caracteres.', $resetPageUrl);
 }
+
+$tokenHash = hash('sha256', $token);
+mysqli_begin_transaction($conexion);
+
+$check = mysqli_prepare(
+    $conexion,
+    'SELECT expires_at FROM password_resets WHERE correo = ? AND token_hash = ? AND expires_at > NOW() LIMIT 1 FOR UPDATE'
+);
+if (!$check) {
+    error_log('Password reset token lookup failed: ' . mysqli_error($conexion));
+    mysqli_rollback($conexion);
+    mysqli_close($conexion);
+    newPasswordAlert('No fue posible procesar el enlace. Solicita un nuevo restablecimiento.');
+}
+
+mysqli_stmt_bind_param($check, 'ss', $email, $tokenHash);
+if (!mysqli_stmt_execute($check)) {
+    error_log('Password reset token lookup failed: ' . mysqli_stmt_error($check));
+    mysqli_stmt_close($check);
+    mysqli_rollback($conexion);
+    mysqli_close($conexion);
+    newPasswordAlert('No fue posible procesar el enlace. Solicita un nuevo restablecimiento.');
+}
+
+mysqli_stmt_store_result($check);
+if (mysqli_stmt_num_rows($check) === 0) {
+    mysqli_stmt_close($check);
+    mysqli_rollback($conexion);
+    mysqli_close($conexion);
+    newPasswordAlert('El enlace es inválido o venció. Solicita un nuevo restablecimiento.');
+}
+mysqli_stmt_close($check);
 
 $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-$stmt = mysqli_prepare($conexion, "UPDATE admin SET `contraseña` = ? WHERE correo = ?");
-if (!$stmt) {
-    die('Error en la preparación de la consulta: ' . mysqli_error($conexion));
+$update = mysqli_prepare($conexion, 'UPDATE admin SET `contraseña` = ? WHERE correo = ? LIMIT 1');
+if (!$update) {
+    error_log('Password reset update preparation failed: ' . mysqli_error($conexion));
+    mysqli_rollback($conexion);
+    mysqli_close($conexion);
+    newPasswordAlert('No fue posible actualizar la contraseña. Inténtelo más tarde.');
 }
 
-mysqli_stmt_bind_param($stmt, 'ss', $hashedPassword, $email);
-if (!mysqli_stmt_execute($stmt)) {
-    die('Error en la ejecución de la consulta: ' . mysqli_stmt_error($stmt));
+mysqli_stmt_bind_param($update, 'ss', $hashedPassword, $email);
+if (!mysqli_stmt_execute($update) || mysqli_stmt_affected_rows($update) !== 1) {
+    error_log('Password reset update failed: ' . mysqli_stmt_error($update));
+    mysqli_stmt_close($update);
+    mysqli_rollback($conexion);
+    mysqli_close($conexion);
+    newPasswordAlert('No fue posible actualizar la contraseña. Solicita un nuevo enlace.');
+}
+mysqli_stmt_close($update);
+
+$delete = mysqli_prepare($conexion, 'DELETE FROM password_resets WHERE correo = ? AND token_hash = ?');
+if (!$delete) {
+    error_log('Password reset token removal preparation failed: ' . mysqli_error($conexion));
+    mysqli_rollback($conexion);
+    mysqli_close($conexion);
+    newPasswordAlert('No fue posible actualizar la contraseña. Inténtelo más tarde.');
 }
 
-if (mysqli_stmt_affected_rows($stmt) === 0) {
-    echo "<script>alert('No se actualizó la contraseña. Verifica que el correo exista.'); window.location='Forgot-password.html';</script>";
-} else {
-    // Borrar token usado
-    $del = mysqli_prepare($conexion, "DELETE FROM password_resets WHERE correo = ? AND token = ?");
-    if ($del) {
-        mysqli_stmt_bind_param($del, 'ss', $email, $token);
-        mysqli_stmt_execute($del);
-        mysqli_stmt_close($del);
-    }
-    echo "<script>alert('Contraseña actualizada correctamente.'); window.location='Login.html';</script>";
+mysqli_stmt_bind_param($delete, 'ss', $email, $tokenHash);
+if (!mysqli_stmt_execute($delete) || mysqli_stmt_affected_rows($delete) !== 1) {
+    error_log('Password reset token removal failed: ' . mysqli_stmt_error($delete));
+    mysqli_stmt_close($delete);
+    mysqli_rollback($conexion);
+    mysqli_close($conexion);
+    newPasswordAlert('No fue posible actualizar la contraseña. Solicita un nuevo enlace.');
 }
 
-mysqli_stmt_close($stmt);
+mysqli_stmt_close($delete);
+mysqli_commit($conexion);
 mysqli_close($conexion);
-?>
+newPasswordAlert('Contraseña actualizada correctamente.', 'Login.html');
