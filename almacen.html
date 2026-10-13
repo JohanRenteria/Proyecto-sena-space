@@ -177,7 +177,7 @@
                                                 <div class="form-group col-md-4">
                                                     <label class="font-weight-bold text-gray-700">Prioridad</label>
                                                     <select id="subPrioridad" class="form-control">
-                                                        <option value="Normal">Normal</option>
+                                                        <option value="Media">Normal</option>
                                                         <option value="Urgente">Urgente</option>
                                                     </select>
                                                 </div>
@@ -424,6 +424,36 @@
         let selectedId = null;
         const $ = id => document.getElementById(id);
 
+        async function api(accion, datos = {}, callback = null) {
+            const formData = new FormData();
+            formData.append('accion', accion);
+            Object.entries(datos).forEach(([key, value]) => {
+                if (value instanceof File) {
+                    formData.append(key, value, value.name);
+                } else if (value !== null && value !== undefined) {
+                    formData.append(key, String(value));
+                }
+            });
+
+            let result;
+            try {
+                const response = await fetch('recursos_api.php', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json' },
+                    body: formData
+                });
+                result = await response.json();
+                if (!response.ok && result.success) result.success = false;
+            } catch (error) {
+                console.error('No se pudo comunicar con el servidor:', error);
+                result = { success: false, message: 'No se pudo comunicar con el servidor.' };
+            }
+
+            if (typeof callback === 'function') callback(result);
+            return result;
+        }
+
         // Control visual del nombre del archivo adjunto seleccionado
         document.addEventListener('change', function(e) {
             if(e.target && e.target.id === 'subArchivo') {
@@ -502,7 +532,7 @@
                     <td><b>${x.recurso_nombre}</b></td>
                     <td><b>${x.cantidad}</b></td>
                     <td><span class="badge badge-info">${x.tipo_apoyo || 'Apoyo Logístico'}</span></td>
-                    <td>${x.observacion || '—'} ${x.tiene_archivo ? '<br><span class="r-mini text-primary"><i class="fas fa-paperclip"></i> Con soporte</span>' : ''}</td>
+                    <td>${x.observacion || '—'} ${x.tiene_archivo ? `<br><a class="r-mini text-primary" href="recursos_api.php?accion=descargar_adjunto&solicitud_id=${Number(x.id)}"><i class="fas fa-paperclip"></i> Descargar soporte</a>` : ''}</td>
                     <td><span class="r-status r-pending">Pendiente</span></td>
                     <td>
                         <button class="btn btn-primary btn-sm font-weight-bold shadow-sm" onclick="abrirDetalleSolicitud(${x.id})">
@@ -559,7 +589,7 @@
                 tipo_apoyo: tipoApoyo,
                 prioridad: prioridad,
                 observacion: observacion || 'Requerimiento institucional de Bienestar.',
-                tiene_archivo: archivo ? true : false,
+                archivo: archivo,
                 nombre_archivo: archivo ? archivo.name : null
             };
 
@@ -754,12 +784,6 @@
 
         load();
         setInterval(load, 5000);
-
-        const name = localStorage.getItem("userName");
-        if (name) {
-            const userNameTop = document.getElementById("userNameTop");
-            if (userNameTop) userNameTop.textContent = name;
-        }
     </script>
 
 </body>

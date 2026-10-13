@@ -443,103 +443,127 @@
     <Script src="js/session.js"></script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const data = window.SenaSpaceLocal ? window.SenaSpaceLocal.getData() : { recursos: [], solicitudes: [], usuarios: [] };
-            const recursos = Array.isArray(data.recursos) ? data.recursos : [];
-            const solicitudes = Array.isArray(data.solicitudes) ? data.solicitudes : [];
-            const usuarios = Array.isArray(data.usuarios) ? data.usuarios : [];
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
 
-            // Identidad del perfil actual. Se usa la sesión local, no los datos globales del administrador.
-            const nombreSesion = String(localStorage.getItem("userName") || "").trim();
-            const correoSesion = String(localStorage.getItem("userEmail") || "").trim().toLowerCase();
-            const cedulaSesion = String(localStorage.getItem("userCedula") || localStorage.getItem("cedula") || "").trim();
-            const fichaSesion = String(localStorage.getItem("userFicha") || "").trim();
-
-            let usuario = usuarios.find(u => cedulaSesion && String(u.cedula) === cedulaSesion);
-            if (!usuario && correoSesion) usuario = usuarios.find(u => String(u.correo || "").toLowerCase() === correoSesion);
-            if (!usuario && nombreSesion) usuario = usuarios.find(u => String(u.nombre || "").trim().toLowerCase() === nombreSesion.toLowerCase());
-
-            const nombre = usuario?.nombre || nombreSesion || "Usuario";
-            const correo = usuario?.correo || correoSesion || "Correo no registrado";
-            const cedula = usuario?.cedula || cedulaSesion;
-            const ficha = usuario?.ficha || fichaSesion || "Sin ficha";
-            const telefono = usuario?.telefono || localStorage.getItem("userTelefono") || "Sin teléfono";
-
-            document.getElementById("perfilNombre").textContent = nombre;
-            document.getElementById("perfilCorreo").textContent = correo;
-            document.getElementById("perfilFicha").textContent = ficha;
-            document.getElementById("perfilTelefono").textContent = telefono;
-            document.getElementById("perfilRol").textContent = usuario?.tipo_usuario || usuario?.rol_sistema || "Usuario";
-
-            // Solo se consideran solicitudes del perfil actual. Nunca se muestran las de otros usuarios.
-            const propias = solicitudes.filter(s => {
-                const sid = String(s.usuario_id || "").trim();
-                const sCorreo = String(s.usuario_correo || "").trim().toLowerCase();
-                const sNombre = String(s.usuario_nombre || "").trim().toLowerCase();
-                return (cedula && sid === String(cedula)) || (correo && sCorreo === correo) || (!cedula && !correoSesion && nombre && sNombre === nombre.toLowerCase());
+        async function consultarPerfil() {
+            const formData = new FormData();
+            formData.append('accion', 'mi_perfil');
+            const response = await fetch('recursos_api.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+                body: formData
             });
-
-            const activos = propias.filter(s => s.estado === "Aprobado");
-            const devueltos = propias.filter(s => s.estado === "Devuelto");
-
-            document.getElementById("statSolicitudes").textContent = propias.length;
-            document.getElementById("statPrestamos").textContent = activos.length;
-            document.getElementById("statDevueltos").textContent = devueltos.length;
-            document.getElementById("perfilActividad").textContent = propias.length + (propias.length === 1 ? " movimiento" : " movimientos");
-
-            // Favoritos independientes por usuario: un perfil no comparte favoritos con otro.
-            const identityKey = cedula || correoSesion || nombre.toLowerCase().replace(/[^a-z0-9]+/gi, "_");
-            const favoritosKey = "logInRecursosFavoritos_" + identityKey;
-            let favoritos = [];
-            try { favoritos = JSON.parse(localStorage.getItem(favoritosKey) || "[]").map(Number); } catch (e) { favoritos = []; }
-            document.getElementById("statFavoritos").textContent = favoritos.length;
-
-            const ranking = recursos.map(r => {
-                const registros = propias.filter(s => Number(s.recurso_id) === Number(r.id));
-                const cantidad = registros.reduce((n, s) => n + (Number(s.cantidad) || 1), 0);
-                return { ...r, cantidad };
-            }).filter(r => r.cantidad > 0).sort((a, b) => b.cantidad - a.cantidad);
-
-            const frecuentes = document.getElementById("frecuentesLista");
-            if (!ranking.length) {
-                frecuentes.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-chart-bar fa-2x mb-2"></i><br>Aún no tienes préstamos registrados.</div>';
-            } else {
-                const max = ranking[0].cantidad || 1;
-                frecuentes.innerHTML = ranking.slice(0, 5).map((r, i) => `
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1"><span><strong>${i + 1}. ${r.nombre}</strong></span><span class="small text-gray-600">${r.cantidad} uso(s)</span></div>
-                        <div class="progress" style="height:12px"><div class="progress-bar bg-primary" style="width:${Math.max(8,(r.cantidad/max)*100)}%"></div></div>
-                    </div>`).join("");
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'No fue posible cargar tu perfil.');
             }
+            return result.data;
+        }
 
-            function pintarFavoritos() {
-                const lista = document.getElementById("favoritosLista");
-                const favRecursos = favoritos.map(id => recursos.find(r => Number(r.id) === Number(id))).filter(Boolean);
-                document.getElementById("statFavoritos").textContent = favRecursos.length;
-                if (!favRecursos.length) {
-                    lista.innerHTML = '<div class="text-center text-muted py-4">Todavía no tienes recursos favoritos.</div>';
-                    return;
+        async function enviarAccion(accion, recursoId) {
+            const formData = new FormData();
+            formData.append('accion', accion);
+            formData.append('recurso_id', String(recursoId));
+            const response = await fetch('recursos_api.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+                body: formData
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'No fue posible actualizar el favorito.');
+            }
+            return result;
+        }
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            try {
+                const data = await consultarPerfil();
+                const recursos = Array.isArray(data.recursos) ? data.recursos : [];
+                const propias = Array.isArray(data.solicitudes) ? data.solicitudes : [];
+                const usuario = data.usuario || {};
+                let favoritos = Array.isArray(data.favoritos) ? data.favoritos.map(Number) : [];
+
+                document.getElementById("perfilNombre").textContent = usuario.nombre || "Usuario";
+                document.getElementById("perfilCorreo").textContent = usuario.correo || "Correo no registrado";
+                document.getElementById("perfilFicha").textContent = usuario.ficha || "Sin ficha";
+                document.getElementById("perfilTelefono").textContent = usuario.telefono || "Sin teléfono";
+                document.getElementById("perfilRol").textContent = usuario.tipo_usuario || usuario.rol_sistema || "Usuario";
+
+                const activos = propias.filter(s => s.estado === "Aprobado");
+                const devueltos = propias.filter(s => s.estado === "Devuelto");
+                document.getElementById("statSolicitudes").textContent = propias.length;
+                document.getElementById("statPrestamos").textContent = activos.length;
+                document.getElementById("statDevueltos").textContent = devueltos.length;
+                document.getElementById("perfilActividad").textContent = propias.length + (propias.length === 1 ? " movimiento" : " movimientos");
+
+                const ranking = recursos.map(recurso => {
+                    const registros = propias.filter(s => Number(s.recurso_id) === Number(recurso.id));
+                    const cantidad = registros.reduce((total, solicitud) => total + (Number(solicitud.cantidad) || 1), 0);
+                    return { ...recurso, cantidad };
+                }).filter(recurso => recurso.cantidad > 0).sort((a, b) => b.cantidad - a.cantidad);
+
+                const frecuentes = document.getElementById("frecuentesLista");
+                if (!ranking.length) {
+                    frecuentes.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-chart-bar fa-2x mb-2"></i><br>Aún no tienes préstamos registrados.</div>';
+                } else {
+                    const max = ranking[0].cantidad || 1;
+                    frecuentes.innerHTML = ranking.slice(0, 5).map((recurso, index) => `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1"><span><strong>${index + 1}. ${escapeHtml(recurso.nombre)}</strong></span><span class="small text-gray-600">${recurso.cantidad} uso(s)</span></div>
+                            <div class="progress" style="height:12px"><div class="progress-bar bg-primary" style="width:${Math.max(8, (recurso.cantidad / max) * 100)}%"></div></div>
+                        </div>`).join("");
                 }
-                lista.innerHTML = favRecursos.map(r => `
-                    <div class="d-flex align-items-center justify-content-between border-bottom py-2">
-                        <div><i class="fas fa-star text-warning mr-2"></i><strong>${r.nombre}</strong><div class="small text-muted">${r.categoria}</div></div>
-                        <button class="btn btn-sm btn-link text-danger quitar-favorito" data-id="${r.id}" title="Quitar favorito"><i class="fas fa-times"></i></button>
-                    </div>`).join("");
-                lista.querySelectorAll(".quitar-favorito").forEach(btn => btn.addEventListener("click", () => {
-                    favoritos = favoritos.filter(id => Number(id) !== Number(btn.dataset.id));
-                    localStorage.setItem(favoritosKey, JSON.stringify(favoritos));
-                    pintarFavoritos();
-                }));
+
+                function pintarFavoritos() {
+                    const lista = document.getElementById("favoritosLista");
+                    const favoritosRecursos = favoritos.map(id => recursos.find(recurso => Number(recurso.id) === id)).filter(Boolean);
+                    document.getElementById("statFavoritos").textContent = favoritosRecursos.length;
+                    if (!favoritosRecursos.length) {
+                        lista.innerHTML = '<div class="text-center text-muted py-4">Todavía no tienes recursos favoritos.</div>';
+                        return;
+                    }
+                    lista.innerHTML = favoritosRecursos.map(recurso => `
+                        <div class="d-flex align-items-center justify-content-between border-bottom py-2">
+                            <div><i class="fas fa-star text-warning mr-2"></i><strong>${escapeHtml(recurso.nombre)}</strong><div class="small text-muted">${escapeHtml(recurso.categoria)}</div></div>
+                            <button class="btn btn-sm btn-link text-danger quitar-favorito" data-id="${Number(recurso.id)}" title="Quitar favorito"><i class="fas fa-times"></i></button>
+                        </div>`).join("");
+                    lista.querySelectorAll(".quitar-favorito").forEach(button => button.addEventListener("click", async () => {
+                        button.disabled = true;
+                        try {
+                            await enviarAccion('quitar_favorito', button.dataset.id);
+                            favoritos = favoritos.filter(id => id !== Number(button.dataset.id));
+                            pintarFavoritos();
+                        } catch (error) {
+                            button.disabled = false;
+                            alert(error.message);
+                        }
+                    }));
+                }
+                pintarFavoritos();
+
+                const recientes = [...propias].sort((a, b) => String(b.fecha_creacion || "").localeCompare(String(a.fecha_creacion || ""))).slice(0, 5);
+                document.getElementById("solicitudesTabla").innerHTML = recientes.length ? recientes.map(solicitud => {
+                    const clase = solicitud.estado === "Aprobado" ? "success" : solicitud.estado === "Pendiente" ? "warning" : solicitud.estado === "Devuelto" ? "info" : "danger";
+                    return `<tr><td>${escapeHtml(solicitud.recurso_nombre || "Recurso")}</td><td>${Number(solicitud.cantidad) || 1}</td><td><span class="badge badge-${clase}">${escapeHtml(solicitud.estado)}</span></td></tr>`;
+                }).join("") : '<tr><td colspan="3" class="text-center text-muted py-4">No tienes solicitudes registradas.</td></tr>';
+
+                document.getElementById("prestamosTabla").innerHTML = activos.length ? activos.slice(0, 5).map(solicitud => `<tr><td>${escapeHtml(solicitud.recurso_nombre || "Recurso")}</td><td>${Number(solicitud.cantidad) || 1}</td><td>${escapeHtml(solicitud.fecha_devolucion || "Por definir")}</td></tr>`).join("") : '<tr><td colspan="3" class="text-center text-muted py-4">No tienes recursos prestados actualmente.</td></tr>';
+            } catch (error) {
+                console.error('No fue posible cargar el perfil desde la base de datos:', error);
+                document.getElementById("frecuentesLista").textContent = error.message;
+                document.getElementById("favoritosLista").textContent = error.message;
             }
-            pintarFavoritos();
-
-            const recientes = [...propias].sort((a,b) => String(b.fecha_creacion||"").localeCompare(String(a.fecha_creacion||""))).slice(0,5);
-            document.getElementById("solicitudesTabla").innerHTML = recientes.length ? recientes.map(s => {
-                const clase = s.estado === "Aprobado" ? "success" : s.estado === "Pendiente" ? "warning" : s.estado === "Devuelto" ? "info" : "danger";
-                return `<tr><td>${s.recurso_nombre || "Recurso"}</td><td>${s.cantidad || 1}</td><td><span class="badge badge-${clase}">${s.estado}</span></td></tr>`;
-            }).join("") : '<tr><td colspan="3" class="text-center text-muted py-4">No tienes solicitudes registradas.</td></tr>';
-
-            document.getElementById("prestamosTabla").innerHTML = activos.length ? activos.slice(0,5).map(s => `<tr><td>${s.recurso_nombre || "Recurso"}</td><td>${s.cantidad || 1}</td><td>${s.fecha_devolucion || "Por definir"}</td></tr>`).join("") : '<tr><td colspan="3" class="text-center text-muted py-4">No tienes recursos prestados actualmente.</td></tr>';
         });
     </script>
 </body>

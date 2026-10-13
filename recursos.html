@@ -708,12 +708,9 @@
     <script src="vendor/jquery/jquery.min.js"></script>
 
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-
     <script src="js/sb-admin-2.min.js"></script>
-<script src="sena_space_local.js"></script>
-<Script src="js/session.js"></script>
+    <script src="js/session.js"></script>
 
 
     <!-- SCRIPT DEL MODULO -->
@@ -736,47 +733,31 @@ function escapeHtml(value) {
 }
 
 
-        /*
-        =====================================================
-        CAMBIO DE SINCRONIZACIÓN:
-        DATOS DE RECURSOS DESDE LA CAPA LOCAL
-        =====================================================
-
-        Antes este módulo utilizaba datos escritos directamente
-        en JavaScript. Ahora los recursos se consultan desde
-        sena_space_local.js y localStorage.
-
-        Esto permite que administrador.html y recursos.html
-        trabajen sobre la misma información.
-        */
-
-        const API = 'LOCALSTORAGE';
-
         let data = [];
-
-        /*
-        =====================================================
-        CAMBIO DE SINCRONIZACIÓN LOCAL:
-        CONSULTAR RECURSOS DESDE localStorage
-        =====================================================
-        */
+        let errorCarga = '';
 
         function cargarRecursos(finallyCallback = null) {
-
-            SenaSpaceLocal.api('listar_recursos', {}, r => {
-
-                if (!r.success) {
-                    console.error('Error cargando recursos locales:', r.message);
-                    if (typeof finallyCallback === 'function') finallyCallback();
-                    return;
+            const formData = new FormData();
+            formData.append('accion', 'inventario_publico');
+            fetch('recursos_api.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+                body: formData
+            }).then(async response => {
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'No fue posible cargar los recursos.');
                 }
-
-                data = (r.data && r.data.recursos)
-                    ? r.data.recursos
-                    : [];
-
+                data = Array.isArray(result.data) ? result.data : [];
+                errorCarga = '';
                 render();
-
+            }).catch(error => {
+                console.error('Error consultando recursos:', error);
+                data = [];
+                errorCarga = 'No fue posible cargar los recursos. Intenta de nuevo.';
+                render();
+            }).finally(() => {
                 if (typeof finallyCallback === 'function') finallyCallback();
             });
         }
@@ -988,7 +969,7 @@ function escapeHtml(value) {
                     <td colspan="6"
                         class="r-empty">
 
-                        No hay recursos.
+                        ${escapeHtml(errorCarga || 'No hay recursos.')}
 
                     </td>
 
@@ -998,19 +979,6 @@ function escapeHtml(value) {
 
         }
 
-
-        /*
-        =====================================================
-        CAMBIO DE SINCRONIZACIÓN:
-        ACTUALIZACIÓN AUTOMÁTICA
-        =====================================================
-
-        Cada segundo se consulta nuevamente localStorage.
-
-        Si el administrador crea, edita o retira un recurso,
-        recursos.html obtiene los datos actualizados sin PHP
-        y sin recargar manualmente la página.
-        */
 
         let consultaEnCurso = false;
 
@@ -1046,72 +1014,9 @@ function escapeHtml(value) {
         $('tipo').onchange = render;
 
 
-        /*
-        =====================================================
-        CAMBIO DE SINCRONIZACIÓN:
-        CARGAR INFORMACIÓN AL ABRIR
-        =====================================================
-        */
-
         cargarRecursos();
 
-        // SINCRONIZACIÓN LOCAL: cuando el administrador guarda un
-        // recurso, esta página se actualiza inmediatamente.
-        window.addEventListener('sena-space-local-updated', function () {
-            cargarRecursos();
-        });
-
-        // Sincronización entre pestañas del navegador.
-        window.addEventListener('storage', function (event) {
-            if (event.key === 'senaSpaceLocalDataV1') {
-                cargarRecursos();
-            }
-        });
-
-
-        /*
-        =====================================================
-        CAMBIO DE SINCRONIZACIÓN:
-        ACTUALIZACIÓN AUTOMÁTICA CADA 1 SEGUNDO (LOCAL)
-        =====================================================
-        */
-
-        setInterval(
-            actualizarRecursosAutomaticamente,
-            1000
-        );
-
-        window.addEventListener('storage', event => {
-            if (event.key === 'senaSpaceLocalDataV1') actualizarRecursosAutomaticamente();
-        });
-
-        window.addEventListener('sena-space-local-updated', actualizarRecursosAutomaticamente);
-
-
-        /*
-        =====================================================
-        USUARIO DE LA SESION
-        =====================================================
-        */
-
-        let name =
-            localStorage.getItem("userName");
-
-
-        if (name) {
-
-            const userNameTop =
-                document.getElementById("userNameTop");
-
-
-            if (userNameTop) {
-
-                userNameTop.textContent =
-                    name;
-
-            }
-
-        }
+        setInterval(actualizarRecursosAutomaticamente, 5000);
 
     </script>
 
