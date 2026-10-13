@@ -43,6 +43,7 @@ $tipoDocumento = trim($_POST['tipo_documento'] ?? '');
 $cedula = trim($_POST['cedula'] ?? '');
 $userType = trim($_POST['userType'] ?? '');
 $numeroFicha = trim($_POST['numeroFicha'] ?? '');
+$telefono = trim($_POST['telefono'] ?? '');
 
 
 // ==========================================================================
@@ -76,6 +77,13 @@ if (
 if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     echo "<script>
         alert('Ingresa un correo válido.');
+        window.location='Register.html';
+    </script>";
+    exit;
+}
+if (strlen($telefono) > 30) {
+    echo "<script>
+        alert('El teléfono no puede superar 30 caracteres.');
         window.location='Register.html';
     </script>";
     exit;
@@ -214,8 +222,8 @@ $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 // ==========================================================================
 
 $sql = 'INSERT INTO `admin`
-        (`cedula`, `correo`, `nombre`, `apellido`, `tipo_usuario`, `rol_id`, `tipo_documento`, `numero_ficha`, `contraseña`)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        (`cedula`, `correo`, `nombre`, `apellido`, `tipo_usuario`, `rol_id`, `tipo_documento`, `numero_ficha`, `telefono`, `contraseña`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
 $stmt = mysqli_prepare($conexion, $sql);
 
@@ -229,7 +237,7 @@ if (!$stmt) {
 // ==========================================================================
 mysqli_stmt_bind_param(
     $stmt,
-    'issssisss',
+    'issssissss',
     $cedulaInt,
     $correo,
     $nombre,
@@ -238,6 +246,7 @@ mysqli_stmt_bind_param(
     $rol_id,
     $tipoDocumento,
     $numeroFicha,
+    $telefono,
     $hashedPassword
 );
 

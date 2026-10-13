@@ -680,30 +680,45 @@
 <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 <script src="js/sb-admin-2.min.js"></script>
-<script src="sena_space_local.js"></script>
-<Script src="js/session.js"></script>
+<script src="js/session.js"></script>
 
 
 <!-- SCRIPTS PARA UBICAR CORRECTAMENTE-->
 <script>
-const API = 'LOCALSTORAGE';
 let DATA = {};
 let selectedId = null;
 const $ = id => document.getElementById(id);
 
-/*
-=====================================================
-CAMBIO DE SINCRONIZACIÓN LOCAL:
-CAPA TEMPORAL SIN PHP
-=====================================================
-Todos los cambios se guardan en localStorage.
-Esto permite que administrador.html y recursos.html
-compartan la misma información en el navegador.
-La persona encargada del PHP podrá reemplazar esta
-capa posteriormente por el backend real.
-*/
-function api(accion, datos = {}, callback = null) {
-    SenaSpaceLocal.api(accion, datos, callback);
+async function api(accion, datos = {}, callback = null) {
+    const formData = new FormData();
+    formData.append('accion', accion);
+    Object.entries(datos).forEach(([key, value]) => {
+        if (value instanceof File) {
+            formData.append(key, value, value.name);
+        } else if (value !== null && value !== undefined) {
+            formData.append(key, String(value));
+        }
+    });
+
+    let result;
+    try {
+        const response = await fetch('recursos_api.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+            body: formData
+        });
+        result = await response.json();
+        if (!response.ok && result.success) {
+            result.success = false;
+        }
+    } catch (error) {
+        console.error('No se pudo comunicar con el servidor:', error);
+        result = { success: false, message: 'No se pudo comunicar con el servidor.' };
+    }
+
+    if (typeof callback === 'function') callback(result);
+    return result;
 }
 
 function load() {
@@ -1080,11 +1095,6 @@ function guardarNuevoRecurso(event) {
         return false;
     }
 
-    if (!window.SenaSpaceLocal || typeof SenaSpaceLocal.api !== 'function') {
-        alert('No se encontró sena_space_local.js. Verifica que esté en la misma carpeta que administrador_local.html.');
-        return false;
-    }
-
     const stock = Number($('nrStock').value);
     const minimo = Number($('nrMinimo').value);
 
@@ -1210,18 +1220,7 @@ function renderHistorial() {
 
 load();
 
-// Sincronización entre pestañas del mismo navegador.
-window.addEventListener('storage', event => {
-    if (event.key === 'senaSpaceLocalDataV1') load();
-});
-window.addEventListener('sena-space-local-updated', load);
-setInterval(load, 1000);
-
-const name = localStorage.getItem("userName");
-if (name) {
-    const userNameTop = document.getElementById("userNameTop");
-    if (userNameTop) userNameTop.textContent = name;
-}
+setInterval(load, 5000);
 </script>
 
 <script>
@@ -1305,7 +1304,7 @@ function guardarNuevaSolicitud(event) {
     const recursoId = document.getElementById('nsRecurso').value;
     const tipo = document.getElementById('nsTipo') ? document.getElementById('nsTipo').value : '';
     const cantidad = document.getElementById('nsCantidad').value;
-    const prioridad = document.getElementById('nsPrioridad') ? document.getElementById('nsPrioridad').value : 'Normal';
+    const prioridad = document.getElementById('nsPrioridad') ? document.getElementById('nsPrioridad').value : 'Media';
     const observacion = document.getElementById('nsObservacion').value.trim();
     
     // Capturar archivo opcional si existe
@@ -1324,7 +1323,7 @@ function guardarNuevaSolicitud(event) {
         cantidad: cantidad,
         prioridad: prioridad,
         observacion: observacion || 'Solicitud generada por el usuario.',
-        tiene_archivo: archivo ? true : false,
+        archivo: archivo,
         nombre_archivo: archivo ? archivo.name : null
     };
 
@@ -1344,4 +1343,3 @@ function guardarNuevaSolicitud(event) {
 
 </body>
 </html>
-
