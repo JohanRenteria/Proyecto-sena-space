@@ -3,7 +3,9 @@ use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 
-require_once __DIR__ . '/libs/vendor/autoload.php';
+require_once __DIR__ . '/PHPMailer/Exception.php';
+require_once __DIR__ . '/PHPMailer/SMTP.php';
+require_once __DIR__ . '/PHPMailer/PHPMailer.php';
 
 function sendEmail(string $to, ?string $toName, string $subject, string $body): bool
 {
