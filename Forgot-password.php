@@ -95,10 +95,154 @@ $resetUrl = $baseUrl . '/New_password.html?' . http_build_query([
 $safeResetUrl = htmlspecialchars($resetUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $safeName = htmlspecialchars(trim((string) $nombre), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $greeting = $safeName !== '' ? $safeName : 'usuario';
-$body = '<p>Hola, ' . $greeting . '.</p>'
-    . '<p>Recibimos una solicitud para restablecer la contraseña de tu cuenta.</p>'
-    . '<p><a href="' . $safeResetUrl . '">Restablecer contraseña</a></p>'
-    . '<p>Este enlace vence en una hora. Si no solicitaste el cambio, puedes ignorar este mensaje.</p>';
+
+$logoUrl = 'https://TU-DOMINIO.com/assets/logo.png';
+
+$body = '
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restablecer contraseña</title>
+</head>
+
+<body style="margin:0; padding:0; background-color:#f1f5f9;
+             font-family:Arial,Helvetica,sans-serif;">
+
+    <table role="presentation" width="100%" cellspacing="0"
+           cellpadding="0" border="0"
+           style="background-color:#f1f5f9; padding:30px 10px;">
+        <tr>
+            <td align="center">
+
+                <table role="presentation" width="100%" cellspacing="0"
+                       cellpadding="0" border="0"
+                       style="max-width:560px; background:#ffffff;
+                              border-radius:12px; overflow:hidden;">
+
+                    <!-- Encabezado -->
+                    <tr>
+                        <td align="center"
+                            style="background:#173c70; padding:30px 20px;">
+
+                            <div style="font-size:52px; line-height:1.3;
+                                        text-align:center; margin:0 auto 14px;">
+                                🎓
+                            </div>
+
+                            <h1 style="color:#ffffff; font-size:26px;
+                                       margin:0;">
+                                LOG-IN
+                            </h1>
+
+                            <p style="color:#dbeafe; font-size:14px;
+                                      margin:8px 0 0;">
+                                Recuperación de cuenta
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Contenido -->
+                    <tr>
+                        <td style="padding:32px 28px; color:#334155;">
+
+                            <h2 style="color:#172033; font-size:23px;
+                                       margin:0 0 18px;">
+                                ¡Hola, ' . $greeting . '!
+                            </h2>
+
+                            <p style="font-size:15px; line-height:1.7;
+                                      margin:0 0 16px;">
+                                Hemos recibido una solicitud para
+                                restablecer la contraseña de tu cuenta.
+                            </p>
+
+                            <p style="font-size:15px; line-height:1.7;
+                                      margin:0 0 26px;">
+                                Para crear una nueva contraseña, haz clic
+                                en el siguiente botón:
+                            </p>
+
+                            <!-- Botón de recuperación -->
+                            <table role="presentation" cellspacing="0"
+                                   cellpadding="0" border="0"
+                                   align="center"
+                                   style="margin:0 auto 26px;">
+                                <tr>
+                                    <td align="center"
+                                        bgcolor="#1769aa"
+                                        style="border-radius:8px;">
+
+                                        <a href="' . $safeResetUrl . '"
+                                           style="display:inline-block;
+                                                  padding:15px 28px;
+                                                  color:#ffffff;
+                                                  text-decoration:none;
+                                                  font-size:15px;
+                                                  font-weight:bold;
+                                                  border-radius:8px;">
+                                            Restablecer contraseña
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="font-size:13px; line-height:1.7;
+                                      color:#64748b; margin:0 0 16px;">
+                                Por seguridad, este enlace vence en una
+                                hora. Si no solicitaste este cambio,
+                                puedes ignorar este mensaje.
+                            </p>
+
+                            <hr style="border:0; border-top:1px solid
+                                       #e2e8f0; margin:24px 0;">
+
+                            <p style="font-size:12px; color:#64748b;
+                                      line-height:1.6; margin:0;">
+                                Si el botón no funciona, copia y pega
+                                el siguiente enlace en tu navegador:
+                            </p>
+
+                            <p style="font-size:12px; line-height:1.6;
+                                      word-break:break-all;">
+                                <a href="' . $safeResetUrl . '"
+                                   style="color:#1769aa;">
+                                    ' . $safeResetUrl . '
+                                </a>
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    <!-- Pie de página -->
+                    <tr>
+                        <td align="center"
+                            style="background:#f8fafc; padding:20px;
+                                   border-top:1px solid #e2e8f0;">
+
+                            <p style="font-size:12px; color:#64748b;
+                                      margin:0 0 6px;">
+                                LOG-IN
+                            </p>
+
+                            <p style="font-size:11px; color:#94a3b8;
+                                      margin:0;">
+                                Este es un mensaje automático.
+                                Por favor, no respondas a este correo.
+                            </p>
+
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>';
 
 if (!sendEmail($dbEmail, $nombre, 'Restablecer contraseña - LOG-IN', $body)) {
     $removeToken = mysqli_prepare($conexion, 'DELETE FROM password_resets WHERE correo = ? AND token_hash = ?');
