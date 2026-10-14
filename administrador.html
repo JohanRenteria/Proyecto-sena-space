@@ -1218,9 +1218,30 @@ function renderHistorial() {
         '<tr><td colspan="4" class="r-empty">No hay movimientos registrados.</td></tr>';
 }
 
-load();
+async function iniciarModuloAdministrador() {
+    try {
+        const response = await fetch('session_info.php', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' }
+        });
+        const session = await response.json();
+        if (!response.ok || !session.success) {
+            window.location.href = 'Login.html';
+            return;
+        }
+        if (session.rol_sistema !== 'Administrador') {
+            window.location.href = 'home.html';
+            return;
+        }
+        load();
+        setInterval(load, 5000);
+    } catch (error) {
+        console.error('No se pudo validar el rol de administrador:', error);
+        window.location.href = 'Login.html';
+    }
+}
 
-setInterval(load, 5000);
+iniciarModuloAdministrador();
 </script>
 
 <script>

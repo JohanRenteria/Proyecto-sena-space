@@ -256,8 +256,16 @@ try {
             responder(true, 'Inventario cargado correctamente.', mysqli_fetch_all($resultado, MYSQLI_ASSOC));
 
         case 'admin_dashboard':
-            requireRoles(['Administrador', 'Almacen']);
+            requireRoles(['Administrador']);
             responder(true, 'Datos cargados desde la base de datos.', cargarPanelAdministracion($conexion));
+
+        case 'almacen_dashboard':
+            requireRoles(['Administrador', 'Almacen']);
+            $panel = cargarPanelAdministracion($conexion);
+            if (($_SESSION['rol_sistema'] ?? 'Usuario') !== 'Administrador') {
+                $panel['usuarios'] = [];
+            }
+            responder(true, 'Datos cargados desde la base de datos.', $panel);
 
         case 'descargar_adjunto':
             $solicitudId = filter_var($_GET['solicitud_id'] ?? null, FILTER_VALIDATE_INT);
