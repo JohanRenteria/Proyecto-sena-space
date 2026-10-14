@@ -7,7 +7,8 @@
 USE sena_space;
 
 ALTER TABLE admin
-    ADD COLUMN IF NOT EXISTS rol_sistema VARCHAR(30) NOT NULL DEFAULT 'Usuario',
+    ADD COLUMN IF NOT EXISTS rol_sistema ENUM('Usuario', 'Almacen', 'Administrador') NOT NULL DEFAULT 'Usuario',
+    MODIFY rol_sistema ENUM('Usuario', 'Almacen', 'Administrador') NOT NULL DEFAULT 'Usuario',
     ADD COLUMN IF NOT EXISTS telefono VARCHAR(30) DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS password_resets (
@@ -23,8 +24,11 @@ CREATE TABLE IF NOT EXISTS password_resets (
 -- Cuenta demo administrativa ya existente en el proyecto.
 -- Correo: kd@gmail.com / contraseña actual: 0
 UPDATE admin
-    SET rol_sistema = 'Administrador'
-    WHERE correo = 'kd@gmail.com';
+    SET rol_sistema = CASE
+        WHEN rol_sistema = 'Administrador' OR tipo_usuario = 'Administrador' OR rol_id = 7 OR correo = 'kd@gmail.com' THEN 'Administrador'
+        WHEN rol_sistema = 'Almacen' OR tipo_usuario = 'Almacen' OR rol_id = 6 THEN 'Almacen'
+        ELSE 'Usuario'
+    END;
 
 CREATE TABLE IF NOT EXISTS recursos (
     id INT AUTO_INCREMENT PRIMARY KEY,

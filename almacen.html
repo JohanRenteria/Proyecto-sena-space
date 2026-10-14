@@ -465,7 +465,7 @@
 
         // Carga inicial de datos conectada al backend vía API
         function load() {
-            api('admin_dashboard', {}, r => {
+            api('almacen_dashboard', {}, r => {
                 if (!r.success) {
                     console.warn(r.message || 'Acceso denegado');
                     return;

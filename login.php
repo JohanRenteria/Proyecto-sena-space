@@ -20,7 +20,10 @@ if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-$sql = "SELECT `cedula`, CONCAT_WS(' ', NULLIF(`nombre`, ''), NULLIF(`apellido`, '')), `correo`, `contraseña`, COALESCE(`rol_sistema`, 'Usuario') FROM `admin` WHERE `correo` = ?";
+$sql = "SELECT `cedula`, CONCAT_WS(' ', NULLIF(`nombre`, ''), NULLIF(`apellido`, '')),
+              `correo`, `contraseña`, COALESCE(`rol_sistema`, 'Usuario'),
+              `tipo_usuario`, `rol_id`
+       FROM `admin` WHERE `correo` = ?";
 $stmt = mysqli_prepare($conexion, $sql);
 
 if (!$stmt) {
@@ -40,13 +43,16 @@ if (mysqli_stmt_num_rows($stmt) === 0) {
     exit;
 }
 
-mysqli_stmt_bind_result($stmt, $cedula, $nombre, $email, $storedPassword, $rolSistema);
+mysqli_stmt_bind_result($stmt, $cedula, $nombre, $email, $storedPassword, $rolSistema, $tipoUsuario, $rolId);
 
 if (mysqli_stmt_fetch($stmt)) {
     $loginOk = false;
     $passwordText = (string) $storedPassword;
+    $rolSistema = trim((string) $rolSistema);
+    $tipoUsuario = trim((string) $tipoUsuario);
+    $rolId = (int) $rolId;
 
-   if ($passwordText === $password) {
+    if ($passwordText === $password) {
         $loginOk = true;
     } elseif (is_string($passwordText) && password_verify($password, $passwordText)) {
         $loginOk = true;
@@ -56,22 +62,38 @@ if (mysqli_stmt_fetch($stmt)) {
     }
 
     if ($loginOk) {
+        if (
+            $rolSistema === 'Administrador' ||
+            $rolSistema === '7' ||
+            $tipoUsuario === 'Administrador' ||
+            $rolId === 7
+        ) {
+            $rolSistema = 'Administrador';
+        } elseif (
+            $rolSistema === 'Almacen' ||
+            $tipoUsuario === 'Almacen' ||
+            $rolId === 6
+        ) {
+            $rolSistema = 'Almacen';
+        } else {
+            $rolSistema = 'Usuario';
+        }
+
         session_regenerate_id(true);
         $_SESSION['usuario_id'] = $cedula;
         $_SESSION['usuario'] = $nombre ?: $email;
         $_SESSION['correo'] = $email;
-        $_SESSION['rol_sistema'] = $rolSistema ?: 'Usuario';
-        $_SESSION['rol_id'] = match ($rolSistema) {
-            'Administrador' => 7,
-            'Almacen' => 6,
-            'Cafetería' => 4,
-            'Seguridad' => 3,
-            'Visitante' => 5,
-            default => 1, // Usuario
-        };
+        $_SESSION['tipo_usuario'] = $tipoUsuario;
+        $_SESSION['rol_sistema'] = $rolSistema;
         mysqli_stmt_close($stmt);
         mysqli_close($conexion);
-        header('Location: ' . (($rolSistema === 'Administrador') ? 'administrador.php' : 'home.html'));
+        if ($rolSistema === 'Administrador') {
+            header('Location: administrador.php');
+        } elseif ($rolSistema === 'Almacen') {
+            header('Location: almacen.php');
+        } else {
+            header('Location: home.html');
+        }
         exit;
     }
 }

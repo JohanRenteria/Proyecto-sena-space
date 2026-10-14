@@ -10,12 +10,10 @@ require_once 'conexion.php';
 | En este archivo PHP hacemos la conversión oficial del nombre del rol
 | a su número (rol_id) antes de guardarlo en la base de datos.
 |
-| Roles disponibles:
-|   Aprendiz   = 1
-|   Instructor = 2
-|   Seguridad  = 3
-|   Cafetería  = 4
-|   Visitante  = 5
+| Roles disponibles y nivel de acceso:
+|   Aprendiz, Instructor, Seguridad, Cafetería y Visitante = Usuario
+|   Almacen = Almacen
+|   Administrador = Administrador
 |
 | IMPORTANTE:
 | No confiamos únicamente en el valor "rol_id" enviado por HTML/JavaScript.
@@ -176,6 +174,9 @@ if (!isset($roles[$userType])) {
 // ==========================================================================
 
 $rol_id = $roles[$userType];
+$rolSistema = $userType === 'Administrador'
+    ? 'Administrador'
+    : ($userType === 'Almacen' ? 'Almacen' : 'Usuario');
 
 
 // ==========================================================================
@@ -223,8 +224,9 @@ $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 // ==========================================================================
 
 $sql = 'INSERT INTO `admin`
-        (`cedula`, `correo`, `nombre`, `apellido`, `tipo_usuario`, `rol_id`, `tipo_documento`, `numero_ficha`, `telefono`, `contraseña`)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        (`cedula`, `correo`, `nombre`, `apellido`, `tipo_usuario`, `rol_id`, `rol_sistema`,
+         `tipo_documento`, `numero_ficha`, `telefono`, `contraseña`)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
 $stmt = mysqli_prepare($conexion, $sql);
 
@@ -238,13 +240,14 @@ if (!$stmt) {
 // ==========================================================================
 mysqli_stmt_bind_param(
     $stmt,
-    'issssissss',
+    'issssisssss',
     $cedulaInt,
     $correo,
     $nombre,
     $apellido,
     $userType,
     $rol_id,
+    $rolSistema,
     $tipoDocumento,
     $numeroFicha,
     $telefono,
