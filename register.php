@@ -153,7 +153,8 @@ $roles = [
     'Seguridad'  => 3,
     'Cafetería'  => 4,
     'Visitante'  => 5,
-    'Almacen'    => 6
+    'Almacen'    => 6,
+    'Administrador' => 7
 ];
 
 

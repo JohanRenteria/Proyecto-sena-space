@@ -61,6 +61,14 @@ if (mysqli_stmt_fetch($stmt)) {
         $_SESSION['usuario'] = $nombre ?: $email;
         $_SESSION['correo'] = $email;
         $_SESSION['rol_sistema'] = $rolSistema ?: 'Usuario';
+        $_SESSION['rol_id'] = match ($rolSistema) {
+            'Administrador' => 7,
+            'Almacen' => 6,
+            'Cafetería' => 4,
+            'Seguridad' => 3,
+            'Visitante' => 5,
+            default => 1, // Usuario
+        };
         mysqli_stmt_close($stmt);
         mysqli_close($conexion);
         header('Location: ' . (($rolSistema === 'Administrador') ? 'administrador.php' : 'home.html'));
