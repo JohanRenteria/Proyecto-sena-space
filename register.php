@@ -1,36 +1,10 @@
 <?php
 require_once 'conexion.php';
 
-/*
-|--------------------------------------------------------------------------
-| REGISTRO DE USUARIOS Y ASIGNACIÓN NUMÉRICA DE ROLES
-|--------------------------------------------------------------------------
-|
-| El formulario HTML envía el rol seleccionado mediante "userType".
-| En este archivo PHP hacemos la conversión oficial del nombre del rol
-| a su número (rol_id) antes de guardarlo en la base de datos.
-|
-| Roles disponibles y nivel de acceso:
-|   Aprendiz, Instructor, Seguridad, Cafetería y Visitante = Usuario
-|   Almacen = Almacen
-|   Administrador = Administrador
-|
-| IMPORTANTE:
-| No confiamos únicamente en el valor "rol_id" enviado por HTML/JavaScript.
-| PHP vuelve a calcular el ID a partir de "userType" para evitar que un
-| usuario pueda modificar el número desde el navegador.
-|--------------------------------------------------------------------------
-*/
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: Register.html');
     exit;
 }
-
-
-// ==========================================================================
-// 1. RECIBIR DATOS DEL FORMULARIO
-// ==========================================================================
 
 $nombre = trim($_POST['registerName'] ?? '');
 $apellido = trim($_POST['registerLastName'] ?? '');
@@ -42,11 +16,6 @@ $cedula = trim($_POST['cedula'] ?? '');
 $userType = trim($_POST['userType'] ?? '');
 $numeroFicha = trim($_POST['numeroFicha'] ?? '');
 $telefono = trim($_POST['telefono'] ?? '');
-
-
-// ==========================================================================
-// 2. VALIDAR CAMPOS OBLIGATORIOS
-// ==========================================================================
 
 if (
     $nombre === '' ||
@@ -67,11 +36,6 @@ if (
     exit;
 }
 
-
-// ==========================================================================
-// 3. VALIDAR CORREO
-// ==========================================================================
-
 if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     echo "<script>
         alert('Ingresa un correo válido.');
@@ -86,11 +50,6 @@ if (strlen($telefono) > 30) {
     </script>";
     exit;
 }
-
-
-// ==========================================================================
-// 4. VALIDAR CONTRASEÑAS
-// ==========================================================================
 
 if ($password !== $confirmPassword) {
     echo "<script>
@@ -111,11 +70,6 @@ if ($userType !== 'Aprendiz') {
     $numeroFicha = null;
 }
 
-
-// ==========================================================================
-// 5. VALIDAR CÉDULA
-// ==========================================================================
-
 if (!ctype_digit($cedula)) {
     echo "<script>
         alert('La cédula debe contener solo números.');
@@ -125,25 +79,6 @@ if (!ctype_digit($cedula)) {
 }
 
 $cedulaInt = (int) $cedula;
-
-
-// ==========================================================================
-// 6. ASIGNACIÓN NUMÉRICA DE ROLES
-// ==========================================================================
-//
-// El usuario selecciona el nombre del rol en Register.html.
-// Aquí PHP transforma ese nombre en el número que se guardará en la BD.
-//
-// Aprendiz   -> 1
-// Instructor -> 2
-// Seguridad  -> 3
-// Cafetería  -> 4
-// Visitante  -> 5
-// Almacen    -> 6
-//
-// Este paso se realiza en PHP para que el número del rol no dependa
-// únicamente del HTML o JavaScript.
-// ==========================================================================
 
 $roles = [
     'Aprendiz'   => 1,
@@ -155,11 +90,6 @@ $roles = [
     'Administrador' => 7
 ];
 
-
-// ==========================================================================
-// 7. COMPROBAR QUE EL ROL SEA VÁLIDO
-// ==========================================================================
-
 if (!isset($roles[$userType])) {
     echo "<script>
         alert('El rol seleccionado no es válido.');
@@ -168,20 +98,10 @@ if (!isset($roles[$userType])) {
     exit;
 }
 
-
-// ==========================================================================
-// 8. OBTENER EL ID NUMÉRICO DEL ROL
-// ==========================================================================
-
 $rol_id = $roles[$userType];
 $rolSistema = $userType === 'Administrador'
     ? 'Administrador'
     : ($userType === 'Almacen' ? 'Almacen' : 'Usuario');
-
-
-// ==========================================================================
-// 9. COMPROBAR SI EL CORREO YA EXISTE
-// ==========================================================================
 
 $sql = 'SELECT 1 FROM `admin` WHERE `correo` = ? LIMIT 1';
 
@@ -208,20 +128,7 @@ if (mysqli_stmt_num_rows($stmt) > 0) {
 
 mysqli_stmt_close($stmt);
 
-
-// ==========================================================================
-// 10. ENCRIPTAR LA CONTRASEÑA
-// ==========================================================================
-
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-
-// ==========================================================================
-// 11. INSERTAR EL USUARIO
-// ==========================================================================
-//
-// El nombre del rol se guarda en tipo_usuario y su ID en rol_id.
-// ==========================================================================
 
 $sql = 'INSERT INTO `admin`
         (`cedula`, `correo`, `nombre`, `apellido`, `tipo_usuario`, `rol_id`, `rol_sistema`,
@@ -234,10 +141,6 @@ if (!$stmt) {
     die('Error en la preparación del registro: ' . mysqli_error($conexion));
 }
 
-
-// ==========================================================================
-// 12. GUARDAR EL USUARIO Y LOS CAMPOS DEL FORMULARIO
-// ==========================================================================
 mysqli_stmt_bind_param(
     $stmt,
     'issssisssss',
@@ -254,11 +157,6 @@ mysqli_stmt_bind_param(
     $hashedPassword
 );
 
-
-// ==========================================================================
-// 13. EJECUTAR REGISTRO
-// ==========================================================================
-
 if (!mysqli_stmt_execute($stmt)) {
     $error = mysqli_stmt_error($stmt);
 
@@ -272,21 +170,8 @@ if (!mysqli_stmt_execute($stmt)) {
     exit;
 }
 
-
-// ==========================================================================
-// 14. CERRAR CONEXIÓN
-// ==========================================================================
-
 mysqli_stmt_close($stmt);
 mysqli_close($conexion);
-
-
-// ==========================================================================
-// 15. REGISTRO EXITOSO
-// ==========================================================================
-//
-// El usuario ya quedó guardado con su ID numérico de rol.
-// ==========================================================================
 
 echo "<script>
     alert('Registro exitoso. Rol asignado correctamente. Ahora puedes iniciar sesión.');
