@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <!-- Mejora responsiva: establece el viewport móvil sin depender de CSS externo no soportado por algunos clientes de correo. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LOG-IN - Restablecer Contraseña</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
@@ -12,7 +14,8 @@
             <td align="center">
                 
                 <!-- Tarjeta Blanca Central -->
-                <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <!-- Mejora responsiva: la tarjeta y el pie ocupan el ancho disponible hasta un máximo de 600 px. -->
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="width: 100%; max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                     
                     <!-- ENCABEZADO: Logo de LOG-IN -->
                     <tr>
@@ -30,7 +33,8 @@
 
                     <!-- CUERPO DEL MENSAJE -->
                     <tr>
-                        <td style="padding: 35px 50px; text-align: center;">
+                        <!-- Mejora móvil: reduce el espacio lateral para mantener el texto legible en pantallas pequeñas. -->
+                        <td style="padding: 35px 24px; text-align: center;">
                             
                             <!-- Saludo con el azul oscuro de tu banner de bienvenida -->
                             <h2 style="margin: 0 0 20px 0; color: #4a738f; font-size: 24px; font-weight: 700; font-style: italic;">
@@ -59,7 +63,7 @@
 
                     <!-- PIE DE PÁGINA -->
                     <tr>
-                        <td style="padding: 0 50px 30px 50px; text-align: justify; color: #64748b; font-size: 11px; line-height: 1.5;">
+                        <td style="padding: 0 24px 30px; text-align: justify; color: #64748b; font-size: 11px; line-height: 1.5;">
                             Este mensaje es enviado por LOG-IN debido a tu relación académica con la institución. Por favor, no respondas este email.
                         </td>
                     </tr>
@@ -67,7 +71,7 @@
                 </table>
 
                 <!-- Soporte fuera de la tarjeta (Enlace en color corporativo) -->
-                <table width="600" border="0" cellspacing="0" cellpadding="0" style="margin-top: 15px;">
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="width: 100%; max-width: 600px; margin-top: 15px;">
                     <tr>
                         <td align="center" style="color: #94a3b8; font-size: 12px;">
                             ¿No visualizas bien este email? <a href="#" style="color: #3c5261; text-decoration: underline;">Ver en tu navegador</a>.

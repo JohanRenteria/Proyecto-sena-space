@@ -8,7 +8,8 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="icon" href="img/icono3.png">
-    <title>Ranking</title>
+    <meta name="description" content="Consulta tu perfil, solicitudes y actividad de recursos en LOG-IN.">
+    <title>Mi perfil y actividad | LOG-IN</title>
 
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link
@@ -17,44 +18,23 @@
 
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
 
-    <script>
-        function setProgress(porcentaje) {
-            const circle = document.querySelector(".circulo-recorrido");
-            const text = document.querySelector(".progress-percentage");
-            const barra = document.querySelector(".linea-progreso-relleno");
-
-            const longitud = getComputedStyle(document.documentElement)
-                .getPropertyValue("--circulo-longitud").trim();
-
-                const recorrido = longitud - (longitud * porcentaje / 100);
-            circle.style.strokeDashoffset = recorrido;
-
-            let start = 0;
-            const duration = 1500; // 1.5s
-            const startTime = performance.now();
-
-            function animateText(time) {
-                const elapsed = time - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const value = Math.floor(start + (porcentaje - start) * progress);
-                text.textContent = value + "%";
-
-                barra.style.width = value + "%";
-
-                if (progress < 1) requestAnimationFrame(animateText);
-            }
-            requestAnimationFrame(animateText);
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            setProgress(65); /* Cambia este valor para ingresar el porcentaje deseado */
-        });
-    </script>
-
-
-
     <link href="css/custom.css" rel="stylesheet">
 
+    <!-- Estilos del módulo: armoniza foco, perfil adaptable y tablas con el resto de la plataforma. -->
+    <style>
+        :focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+        .table-responsive { overscroll-behavior-x: contain; }
+        .profile-details { overflow-wrap: anywhere; }
+        .profile-avatar { width: 78px; height: 78px; object-fit: cover; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+        }
+        @media (max-width: 767.98px) {
+            .prestamos-header { padding: 1.5rem; }
+            .prestamos-header h1 { font-size: 1.55rem; }
+            .profile-avatar { width: 64px; height: 64px; }
+        }
+    </style>
 </head>
 
 <body id="page-top" class="bg-gradient-sena">
@@ -143,42 +123,7 @@
                         <i class="fa fa-bars"></i>
                     </button>
 
-                    <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
-                        <div class="input-group">
-                            <input type="text" class="form-control bg-light border-0 small" placeholder="Buscar por..."
-                                aria-label="Search" aria-describedby="basic-addon2">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="button">
-                                    <i class="fas fa-search fa-sm"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-
                     <ul class="navbar-nav ml-auto">
-
-                        <li class="nav-item dropdown no-arrow d-sm-none">
-                            <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button"
-                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-search fa-fw"></i>
-                            </a>
-
-                            <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in"
-                                aria-labelledby="searchDropdown">
-                                <form class="form-inline mr-auto w-100 navbar-search">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control bg-light border-0 small"
-                                            placeholder="Search for..." aria-label="Search"
-                                            aria-describedby="basic-addon2">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-primary" type="button">
-                                                <i class="fas fa-search fa-sm"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </li>
 
                         <li class="nav-item dropdown no-arrow mx-1">
                             <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
@@ -307,7 +252,7 @@
 
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="home.html">
+                                <a class="dropdown-item" href="charts.html" aria-current="page">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Perfil
                                 </a>
@@ -316,7 +261,7 @@
                                     Ajustes
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="Register.html" data-toggle="modal" data-target="#logoutModal">
+                                <a class="dropdown-item" href="#logoutModal" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Desconectarse
                                 </a>
@@ -329,9 +274,19 @@
 
                 <div class="container-fluid">
 
-                    <h1 class="h3 mb-2 text-gray-800">Ranking & línea de progreso</h1>
-                    <p class="mb-4">A continuación te mostramos tu ranking y línea de progreso en base a tus resultados
-                        académicos.</p>
+                    <!-- Encabezado compartido: presenta el seguimiento personal con el mismo banner de los módulos. -->
+                    <header class="prestamos-header">
+                        <h1><i class="fas fa-chart-line mr-2" aria-hidden="true"></i>Mi perfil y actividad</h1>
+                        <span class="badge">SEGUIMIENTO PERSONAL</span>
+                        <p class="mb-0 mt-3">Consulta tus solicitudes, préstamos y recursos favoritos desde un solo lugar.</p>
+                    </header>
+
+                    <!-- Navegación relacionada: facilita continuar hacia recursos o préstamos desde el perfil. -->
+                    <nav class="prestamos-content-nav" aria-label="Secciones de recursos y préstamos">
+                        <a href="usuario.html"><i class="fas fa-box-open mr-2" aria-hidden="true"></i>Recursos</a>
+                        <a href="prestamos.html"><i class="fas fa-handshake mr-2" aria-hidden="true"></i>Préstamos</a>
+                        <a class="active" href="charts.html" aria-current="page"><i class="fas fa-chart-line mr-2" aria-hidden="true"></i>Mi actividad</a>
+                    </nav>
 
                     <div class="row mb-4 mt-3">
                         <div class="col-lg-8 mb-4">
@@ -339,12 +294,16 @@
                                 <div class="card-body">
                                     <div class="row align-items-center">
                                         <div class="col-auto">
-                                            <img src="img/fondo.png" class="img-profile rounded-circle" style="width:78px;height:78px;object-fit:cover;" alt="Perfil">
+                                            <img src="img/fondo.png" class="img-profile rounded-circle profile-avatar" alt="Perfil">
                                         </div>
                                         <div class="col">
                                             <h4 class="font-weight-bold text-gray-800 mb-1" id="perfilNombre">Usuario</h4>
                                             <div class="text-muted mb-2" id="perfilCorreo">correo no registrado</div>
-                                            <div class="small text-gray-600"><strong>Ficha:</strong> <span id="perfilFicha">Sin ficha</span> &nbsp; | &nbsp; <strong>Teléfono:</strong> <span id="perfilTelefono">Sin teléfono</span></div>
+                                            <div class="small text-gray-600 profile-details">
+                                                <strong>Ficha:</strong> <span id="perfilFicha">Sin ficha</span>
+                                                <span class="mx-2 d-none d-sm-inline">|</span>
+                                                <strong>Teléfono:</strong> <span id="perfilTelefono">Sin teléfono</span>
+                                            </div>
                                             <span class="badge badge-primary mt-2" id="perfilRol">Usuario</span>
                                         </div>
                                     </div>
@@ -364,10 +323,11 @@
                     </div>
 
                     <div class="row mb-4">
-                        <div class="col-md-3 mb-4"><div class="card shadow h-100 py-2 border-left-primary"><div class="card-body"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mis solicitudes</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statSolicitudes">0</div><small class="text-gray-600">Solicitudes realizadas por ti</small></div></div></div>
-                        <div class="col-md-3 mb-4"><div class="card shadow h-100 py-2 border-left-success"><div class="card-body"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Mis préstamos</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statPrestamos">0</div><small class="text-gray-600">Préstamos activos</small></div></div></div>
-                        <div class="col-md-3 mb-4"><div class="card shadow h-100 py-2 border-left-warning"><div class="card-body"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Mis favoritos</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statFavoritos">0</div><small class="text-gray-600">Recursos guardados por ti</small></div></div></div>
-                        <div class="col-md-3 mb-4"><div class="card shadow h-100 py-2 border-left-info"><div class="card-body"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Devueltos</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statDevueltos">0</div><small class="text-gray-600">Préstamos que ya entregaste</small></div></div></div>
+                        <!-- Tarjetas responsivas: dos columnas en móvil y cuatro en escritorio. -->
+                        <div class="col-6 col-lg-3 mb-4"><div class="card shadow h-100 py-2 border-left-primary"><div class="card-body"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Mis solicitudes</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statSolicitudes">0</div><small class="text-gray-600">Solicitudes realizadas por ti</small></div></div></div>
+                        <div class="col-6 col-lg-3 mb-4"><div class="card shadow h-100 py-2 border-left-success"><div class="card-body"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Mis préstamos</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statPrestamos">0</div><small class="text-gray-600">Préstamos activos</small></div></div></div>
+                        <div class="col-6 col-lg-3 mb-4"><div class="card shadow h-100 py-2 border-left-warning"><div class="card-body"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Mis favoritos</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statFavoritos">0</div><small class="text-gray-600">Recursos guardados por ti</small></div></div></div>
+                        <div class="col-6 col-lg-3 mb-4"><div class="card shadow h-100 py-2 border-left-info"><div class="card-body"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Devueltos</div><div class="h5 mb-0 font-weight-bold text-gray-800" id="statDevueltos">0</div><small class="text-gray-600">Préstamos que ya entregaste</small></div></div></div>
                     </div>
 
                     <div class="row">
