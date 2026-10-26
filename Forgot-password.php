@@ -87,7 +87,8 @@ mysqli_stmt_close($saveToken);
 $configuredBaseUrl = getenv('APP_BASE_URL');
 $baseUrl = is_string($configuredBaseUrl) && trim($configuredBaseUrl) !== ''
     ? rtrim(trim($configuredBaseUrl), '/')
-    : 'http://localhost/Proyecto-sena-space';
+    //Codigo para desplegar el servidor -> cloudflared tunnel --url http://localhost:80
+    : 'https://depth-pipeline-man-evaluating.trycloudflare.com/Proyecto-sena-space/';
 $resetUrl = $baseUrl . '/New_password.html?' . http_build_query([
     'email' => $dbEmail,
     'token' => $token,
