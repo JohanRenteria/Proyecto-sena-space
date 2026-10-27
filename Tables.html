@@ -25,6 +25,45 @@
 
     <link href="css/custom.css" rel="stylesheet">
 
+    <!-- Mejora accesible embebida: foco visible, tablas desplazables y menos movimiento. -->
+    <style>
+        :focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+        .prestamos-table-panel, .table-responsive, .r-panel { overflow-x: auto; overscroll-behavior-x: contain; }
+        .r-table { min-width: 680px; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+        }
+    </style>
+    <!-- Mejora funcional embebida: permite mostrar u ocultar las contraseñas desde el formulario. -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('input[type="password"]').forEach(input => {
+                if (input.dataset.visibilityControl === 'true') return;
+                input.dataset.visibilityControl = 'true';
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                input.parentNode.insertBefore(wrapper, input);
+                wrapper.appendChild(input);
+                input.style.paddingRight = '5rem';
+                const label = input.labels?.[0]?.textContent.trim() || input.placeholder || 'la contraseña';
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.textContent = 'Mostrar';
+                toggle.setAttribute('aria-label', `Mostrar ${label}`);
+                toggle.setAttribute('aria-pressed', 'false');
+                if (input.id) toggle.setAttribute('aria-controls', input.id);
+                Object.assign(toggle.style, { position: 'absolute', top: '50%', right: '.65rem', transform: 'translateY(-50%)', border: '0', background: 'transparent', color: '#245273', fontWeight: '700', cursor: 'pointer' });
+                toggle.addEventListener('click', () => {
+                    const visible = input.type === 'password';
+                    input.type = visible ? 'text' : 'password';
+                    toggle.textContent = visible ? 'Ocultar' : 'Mostrar';
+                    toggle.setAttribute('aria-label', `${visible ? 'Ocultar' : 'Mostrar'} ${label}`);
+                    toggle.setAttribute('aria-pressed', String(visible));
+                });
+                wrapper.appendChild(toggle);
+            });
+        });
+    </script>
 </head>
 
 <body id="page-top">

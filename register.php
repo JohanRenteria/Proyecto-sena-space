@@ -59,6 +59,21 @@ if ($password !== $confirmPassword) {
     exit;
 }
 
+// La contraseña debe superar 6 caracteres, incluir mayúsculas y minúsculas
+// y no contener Números consecutivos del 1 al 9 
+if (
+    preg_match('/^.{7,}$/us', $password) !== 1 ||
+    preg_match('/[A-Z]/', $password) !== 1 ||
+    preg_match('/[a-z]/', $password) !== 1 ||
+    strpos($password, '123456789') !== false
+) {
+    echo "<script>
+        alert('La contraseña debe tener más de 6 caracteres, incluir mayúsculas y minúsculas, y no contener la secuencia 123456789.');
+        window.location='Register.html';
+    </script>";
+    exit;
+}
+
 if ($userType === 'Aprendiz' && $numeroFicha === '') {
     echo "<script>
         alert('Ingresa el número de ficha para el rol Aprendiz.');
@@ -70,9 +85,14 @@ if ($userType !== 'Aprendiz') {
     $numeroFicha = null;
 }
 
-if (!ctype_digit($cedula)) {
+// El documento solo puede contener dígitos, tener máximo 10 y no incluir 123456789.
+if (
+    !ctype_digit($cedula) ||
+    strlen($cedula) > 10 ||
+    strpos($cedula, '123456789') !== false
+) {
     echo "<script>
-        alert('La cédula debe contener solo números.');
+        alert('El documento debe contener solo números, máximo 10 dígitos, y no incluir la secuencia 123456789.');
         window.location='Register.html';
     </script>";
     exit;

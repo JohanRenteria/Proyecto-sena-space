@@ -20,6 +20,45 @@
     <!-- CSS del módulo -->
     <link rel="stylesheet" href="modulo_recursos.css">
 
+    <!-- Mejora accesible embebida: foco visible, tablas desplazables y menos movimiento. -->
+    <style>
+        :focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+        .prestamos-table-panel, .table-responsive, .r-panel { overflow-x: auto; overscroll-behavior-x: contain; }
+        .r-table { min-width: 680px; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+        }
+    </style>
+    <!-- Mejora funcional embebida: permite mostrar u ocultar las contraseñas desde el formulario. -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('input[type="password"]').forEach(input => {
+                if (input.dataset.visibilityControl === 'true') return;
+                input.dataset.visibilityControl = 'true';
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                input.parentNode.insertBefore(wrapper, input);
+                wrapper.appendChild(input);
+                input.style.paddingRight = '5rem';
+                const label = input.labels?.[0]?.textContent.trim() || input.placeholder || 'la contraseña';
+                const toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.textContent = 'Mostrar';
+                toggle.setAttribute('aria-label', `Mostrar ${label}`);
+                toggle.setAttribute('aria-pressed', 'false');
+                if (input.id) toggle.setAttribute('aria-controls', input.id);
+                Object.assign(toggle.style, { position: 'absolute', top: '50%', right: '.65rem', transform: 'translateY(-50%)', border: '0', background: 'transparent', color: '#245273', fontWeight: '700', cursor: 'pointer' });
+                toggle.addEventListener('click', () => {
+                    const visible = input.type === 'password';
+                    input.type = visible ? 'text' : 'password';
+                    toggle.textContent = visible ? 'Ocultar' : 'Mostrar';
+                    toggle.setAttribute('aria-label', `${visible ? 'Ocultar' : 'Mostrar'} ${label}`);
+                    toggle.setAttribute('aria-pressed', String(visible));
+                });
+                wrapper.appendChild(toggle);
+            });
+        });
+    </script>
 </head>
 
 
@@ -147,81 +186,7 @@
                     </button>
 
 
-                    <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
-
-                        <div class="input-group">
-
-                            <input type="text"
-                                class="form-control bg-light border-0 small"
-                                placeholder="Buscar por..."
-                                aria-label="Search"
-                                aria-describedby="basic-addon2">
-
-                            <div class="input-group-append">
-
-                                <button class="btn btn-primary"
-                                    type="button">
-
-                                    <i class="fas fa-search fa-sm"></i>
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </form>
-
-
                     <ul class="navbar-nav ml-auto">
-
-                        <!-- Búsqueda móvil -->
-                        <li class="nav-item dropdown no-arrow d-sm-none">
-
-                            <a class="nav-link dropdown-toggle"
-                                href="#"
-                                id="searchDropdown"
-                                role="button"
-                                data-toggle="dropdown"
-                                aria-haspopup="true"
-                                aria-expanded="false">
-
-                                <i class="fas fa-search fa-fw"></i>
-
-                            </a>
-
-                            <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in"
-                                aria-labelledby="searchDropdown">
-
-                                <form class="form-inline mr-auto w-100 navbar-search">
-
-                                    <div class="input-group">
-
-                                        <input type="text"
-                                            class="form-control bg-light border-0 small"
-                                            placeholder="Search for..."
-                                            aria-label="Search"
-                                            aria-describedby="basic-addon2">
-
-                                        <div class="input-group-append">
-
-                                            <button class="btn btn-primary"
-                                                type="button">
-
-                                                <i class="fas fa-search fa-sm"></i>
-
-                                            </button>
-
-                                        </div>
-
-                                    </div>
-
-                                </form>
-
-                            </div>
-
-                        </li>
-
 
                         <!-- Notificaciones -->
                         <li class="nav-item dropdown no-arrow mx-1">
@@ -546,7 +511,12 @@
 
                             <div class="col-md-6 mb-3">
                                 <label class="font-weight-bold">Categoría *</label>
-                                <input id="nrCategoria" type="text" class="form-control" placeholder="Ej. Tecnología, deporte, audiovisual" required>
+                                <select id="nrCategoria" class="form-control" required>
+                                    <option value="">Seleccione una categoría...</option>
+                                    <option value="Deporte">Deporte</option>
+                                    <option value="Servicio">Servicio</option>
+                                    <option value="Cultura y Arte">Cultura y Arte</option>
+                                </select>
                             </div>
 
                             <div class="col-md-4 mb-3">
@@ -557,27 +527,31 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-2 mb-3">
                                 <label class="font-weight-bold">Stock total *</label>
                                 <input id="nrStock" type="number" min="0" value="1" class="form-control" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-2 mb-3">
                                 <label class="font-weight-bold">Stock mínimo *</label>
                                 <input id="nrMinimo" type="number" min="0" value="1" class="form-control" required>
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="font-weight-bold">Código / referencia</label>
                                 <input id="nrCodigo" type="text" class="form-control" placeholder="Ej. TEC-001">
                             </div>
 
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-4 mb-3">
                                 <label class="font-weight-bold">Ubicación</label>
-                                <input id="nrUbicacion" type="text" class="form-control" placeholder="Ej. Almacén principal">
+                                <select id="nrUbicacion" class="form-control">
+                                    <option value="">Seleccione una ubicación...</option>
+                                    <option value="Bienestar">Bienestar</option>
+                                    <option value="Almacen">Almacen</option>
+                                </select>
                             </div>
 
-                            <div class="col-12 mb-3">
+                            <div class="col-md-8 mb-3">
                                 <label class="font-weight-bold">Descripción / observaciones</label>
                                 <textarea id="nrDescripcion" class="form-control" rows="3" placeholder="Agrega información útil sobre el recurso..."></textarea>
                             </div>
@@ -616,7 +590,12 @@
 
         <section id="historial" class="view d-none">
             <div class="prestamos-panel prestamos-table-panel">
-                <div class="p-3"><h2 class="mb-0">Historial de movimientos</h2></div>
+                <div class="p-3 d-flex justify-content-between align-items-center flex-wrap">
+                    <h2 class="mb-2 mb-md-0">Historial de movimientos</h2>
+                    <input id="busquedaHistorial" type="search" class="form-control" style="max-width: 320px;"
+                        placeholder="Buscar en el historial..." aria-label="Buscar en el historial"
+                        oninput="renderHistorial()">
+                </div>
                 <table class="r-table">
                     <thead><tr>
                         <th>Fecha</th><th>Actor</th><th>Acción</th><th>Detalle</th>
@@ -1208,14 +1187,26 @@ function rol(cedula, nuevo) {
 }
 
 function renderHistorial() {
-    $('tblHistorial').innerHTML = (DATA.historial || []).map(x => `
+    const query = $('busquedaHistorial').value.trim().toLocaleLowerCase();
+    const historial = DATA.historial || [];
+    const movimientos = historial.filter(x => {
+        const contenido = [x.fecha, x.actor, x.accion, x.detalle]
+            .map(valor => String(valor || ''))
+            .join(' ')
+            .toLocaleLowerCase();
+        return contenido.includes(query);
+    });
+
+    $('tblHistorial').innerHTML = movimientos.map(x => `
         <tr>
             <td>${x.fecha}</td>
             <td>${x.actor || '—'}</td>
             <td>${x.accion}</td>
             <td>${x.detalle}</td>
         </tr>`).join('') ||
-        '<tr><td colspan="4" class="r-empty">No hay movimientos registrados.</td></tr>';
+        `<tr><td colspan="4" class="r-empty">${historial.length
+            ? 'No hay movimientos que coincidan con la búsqueda.'
+            : 'No hay movimientos registrados.'}</td></tr>`;
 }
 
 async function iniciarModuloAdministrador() {
